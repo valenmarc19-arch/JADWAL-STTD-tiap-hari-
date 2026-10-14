@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Signage Kampus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html { 
+            margin: 0; padding: 0; height: 100%; 
+            font-family: 'Poppins', sans-serif; 
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); 
+            color: #ffffff; 
+            overflow: hidden; 
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 20px 40px; margin: 15px;
+        }
+        .logo-title h1 { margin: 0; font-size: 32px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
+        .logo-title p { margin: 5px 0 0 0; font-size: 16px; color: #e0e0e0; font-weight: 300; }
+        .datetime { text-align: right; }
+        .time { font-size: 40px; font-weight: 700; margin: 0; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .date { font-size: 16px; margin: 0; color: #e0e0e0; font-weight: 300; }
+
+        .main-container { 
+            display: flex; height: calc(100% - 190px); gap: 20px; padding: 0 20px; 
+        }
+
+        .left-panel { flex: 2.5; display: flex; flex-direction: column; gap: 20px; }
+        .video-wrapper { 
+            flex: 1; border-radius: 16px; overflow: hidden; position: relative;
+        }
+        .video-wrapper iframe { 
+            width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0;
+            pointer-events: none;
+        }
+
+        .sidebar { flex: 1; padding: 25px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+        
+        /* Modifikasi Judul Widget agar memunculkan Hari secara Otomatis */
+        .widget h2 { 
+            margin: 0 0 20px 0; font-size: 22px; font-weight: 600; 
+            border-bottom: 2px solid rgba(255,255,255,0.3); padding-bottom: 10px;
+            display: flex; justify-content: space-between;
+        }
+        .hari-badge {
+            background: #ff4b2b; color: white; font-size: 14px; 
+            padding: 4px 12px; border-radius: 20px;
+        }
+
+        .agenda-item { 
+            background: rgba(0, 0, 0, 0.2); padding: 15px; border-radius: 12px; margin-bottom: 12px;
+            border-left: 5px solid #00f2fe; transition: transform 0.3s;
+        }
+        .agenda-time { font-size: 13px; font-weight: 600; color: #00f2fe; margin-bottom: 5px; display: block; }
+        .agenda-title { margin: 0; font-size: 16px; font-weight: 600; }
+        .agenda-loc { margin: 5px 0 0 0; font-size: 13px; color: #cccccc; }
+
+        .qr-section {
+            display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.3); 
+            padding: 15px; border-radius: 12px; margin-top: auto;
+        }
+        .qr-section img { width: 80px; height: 80px; border-radius: 8px; background: white; padding: 5px;}
+        .qr-text h3 { margin: 0 0 5px 0; font-size: 16px; color: #00f2fe; }
+        .qr-text p { margin: 0; font-size: 12px; color: #cccccc; }
+
+        .footer { 
+            position: absolute; bottom: 15px; left: 15px; right: 15px;
+            height: 55px; display: flex; align-items: center; overflow: hidden;
+            background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(10px); border-radius: 10px;
+        }
+        .marquee-label {
+            background: linear-gradient(90deg, #ff416c 0%, #ff4b2b 100%);
+            color: white; height: 100%; padding: 0 25px;
+            display: flex; align-items: center; font-weight: 700; font-size: 18px; z-index: 10;
+        }
+        .marquee-container { flex: 1; white-space: nowrap; font-size: 18px; }
+        .marquee-content { display: inline-block; padding-left: 100%; animation: marquee 22s linear infinite; }
+        @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+    </style>
+</head>
+<body>
+
+    <div class="header glass-panel">
+        <div class="logo-title">
+            <h1>PORTAL INFORMASI DIGITAL</h1>
+            <p>Program Studi D3 Analisis Transportasi</p>
+        </div>
+        <div class="datetime">
+            <p class="time" id="clock">00:00:00</p>
+            <p class="date" id="date">Memuat tanggal...</p>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="left-panel">
+            <div class="video-wrapper glass-panel" id="video-container"></div>
+        </div>
+
+        <div class="sidebar glass-panel">
+            <div class="widget">
+                <h2>Jadwal Terkini <span class="hari-badge" id="hari-badge">Memuat...</span></h2>
+                <div id="agenda-list"><p>Menyambungkan ke Google Sheets...</p></div>
+            </div>
+
+            <div class="qr-section">
+                <img id="qr-image" src="" alt="QR Code">
+                <div class="qr-text">
+                    <h3>Pindai (Scan) Jadwal</h3>
+                    <p>Scan barcode ini untuk melihat jadwal lengkap hari ini.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Running Text -->
+    <div class="footer">
+        <div class="marquee-label">PENGUMUMAN</div>
+        <div class="marquee-container">
+            <div class="marquee-content" id="running-text"></div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // PENGATURAN KONTEN (EDIT DI SINI)
+        // ==========================================
+        
+        // 1. LINK GOOGLE SHEETS TERBARU (Menggunakan format 4 kolom: Hari, Waktu, Kegiatan, Lokasi)
+        const linkGoogleSheet = "https://docs.google.com/spreadsheets/d/1LWx0lJU4nUQop0CeOJ5Dt4jo5J_lwovuYlb_bCS5ZTk/edit?gid=1314374271#gid=1314374271";
+
+        // 2. ID VIDEO YOUTUBE 
+        const youtubeID = "mgoxNFqvgV4";
+
+        // 3. TEKS PENGUMUMAN BAR BAWAH (RUNNING TEXT)
+        const teksPengumuman = "🔴 Batas akhir pengumpulan laporan magang adalah Jumat pukul 15.00 WIB &nbsp; | &nbsp; 🟢 Pastikan atribut seragam lengkap saat apel pagi.";
+
+
+        // ==========================================
+        // LOGIKA SISTEM
+        // ==========================================
+        const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            const hariIni = days[now.getDay()];
+            
+            document.getElementById('date').textContent = `${hariIni}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+            document.getElementById('hari-badge').textContent = `Hari ${hariIni}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function renderQRCode() {
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(linkGoogleSheet)}`;
+            document.getElementById('qr-image').src = qrUrl;
+        }
+
+        function renderVideo() {
+            const videoContainer = document.getElementById('video-container');
+            videoContainer.innerHTML = `
+                <iframe 
+                    src="https://www.youtube.com/embed/${youtubeID}?autoplay=1&mute=1&loop=1&playlist=${youtubeID}&controls=0&showinfo=0&rel=0&disablekb=1" 
+                    allow="autoplay; encrypted-media" 
+                    style="pointer-events: none;"
+                    allowfullscreen>
+                </iframe>
+            `;
+        }
+
+        function renderPengumuman() {
+            document.getElementById('running-text').innerHTML = teksPengumuman;
+        }
+
+        // ==========================================
+        // LOGIKA FILTER HARI OTOMATIS
+        // ==========================================
+        async function fetchJadwalDariSheets() {
+            try {
+                const sheetIdMatch = linkGoogleSheet.match(/\/d\/(.*?)(\/|$)/);
+                if (!sheetIdMatch) return;
+                const sheetId = sheetIdMatch[1];
+                
+                const tsvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=tsv&t=${new Date().getTime()}`;
+
+                const response = await fetch(tsvUrl);
+                const data = await response.text();
+
+                const barisData = data.split(/\r?\n/);
+                barisData.shift(); // Buang baris header (Hari, Waktu, Kegiatan, Lokasi)
+
+                const container = document.getElementById('agenda-list');
+                container.innerHTML = '';
+
+                // Dapatkan nama hari ini (Misal: "Senin")
+                const hariIni = days[new Date().getDay()].toLowerCase();
+                let agendaDitemukan = false;
+                let indeks = 1;
+
+                barisData.forEach((baris) => {
+                    const kolom = baris.split('\t');
+                    
+                    // Pastikan baris memiliki 4 kolom (0:Hari, 1:Waktu, 2:Kegiatan, 3:Lokasi)
+                    if (kolom.length >= 4 && kolom[0].trim() !== '') {
+                        
+                        const hariJadwal = kolom[0].trim().toLowerCase();
+                        
+                        // FILTER: Hanya render kegiatan yang kolom harinya SAMA dengan hari ini
+                        if (hariJadwal === hariIni) {
+                            agendaDitemukan = true;
+                            const waktu = kolom[1].trim();
+                            const judul = kolom[2].trim();
+                            const lokasi = kolom[3].trim();
+
+                            container.innerHTML += `
+                                <div class="agenda-item">
+                                    <span class="agenda-time">${kolom[0].trim()} • ${waktu}</span>
+                                    <p class="agenda-title">${judul}</p>
+                                    <p class="agenda-loc">${lokasi}</p>
+                                </div>
+                            `;
+                            indeks++;
+                        }
+                    }
+                });
+
+                // Jika di Excel tidak ada tulisan hari ini (kosong/libur)
+                if (!agendaDitemukan) {
+                    container.innerHTML = `
+                        <div style="text-align: center; color: #ccc; margin-top: 30px;">
+                            <h3 style="margin:0;">Tidak ada agenda</h3>
+                            <p style="font-size:14px;">Belum ada jadwal khusus untuk hari ini.</p>
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+                console.error("Gagal menarik data:", error);
+            }
+        }
+
+        renderQRCode();
+        renderVideo();
+        renderPengumuman();
+        fetchJadwalDariSheets();
+
+        // Refresh data jadwal diam-diam setiap 3 menit
+        setInterval(fetchJadwalDariSheets, 180000); 
+    </script>
+</body>
+</html>
