@@ -47,7 +47,6 @@
 
         .sidebar { flex: 1; padding: 25px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
         
-        /* Modifikasi Judul Widget agar memunculkan Hari secara Otomatis */
         .widget h2 { 
             margin: 0 0 20px 0; font-size: 22px; font-weight: 600; 
             border-bottom: 2px solid rgba(255,255,255,0.3); padding-bottom: 10px;
@@ -117,13 +116,12 @@
                 <img id="qr-image" src="" alt="QR Code">
                 <div class="qr-text">
                     <h3>Pindai (Scan) Jadwal</h3>
-                    <p>Scan barcode ini untuk melihat jadwal lengkap hari ini.</p>
+                    <p>Scan barcode ini untuk melihat jadwal lengkap dari HP Anda.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Running Text -->
     <div class="footer">
         <div class="marquee-label">PENGUMUMAN</div>
         <div class="marquee-container">
@@ -136,18 +134,18 @@
         // PENGATURAN KONTEN (EDIT DI SINI)
         // ==========================================
         
-        // 1. LINK GOOGLE SHEETS TERBARU (Menggunakan format 4 kolom: Hari, Waktu, Kegiatan, Lokasi)
-        const linkGoogleSheet = "https://docs.google.com/spreadsheets/d/1LWx0lJU4nUQop0CeOJ5Dt4jo5J_lwovuYlb_bCS5ZTk/edit?gid=1314374271#gid=1314374271";
+        // 1. LINK GOOGLE SHEETS 
+        // Ganti URL di bawah ini dengan link Google Sheets milik Anda!
+        const linkGoogleSheet = "https://docs.google.com/spreadsheets/d/1LWx0lJU4nUQop0CeOJ5Dt4jo5J_lwovuYlb_bCS5ZTk/edit?usp=sharing";
 
         // 2. ID VIDEO YOUTUBE 
         const youtubeID = "mgoxNFqvgV4";
 
-        // 3. TEKS PENGUMUMAN BAR BAWAH (RUNNING TEXT)
+        // 3. TEKS PENGUMUMAN BAR BAWAH
         const teksPengumuman = "🔴 Batas akhir pengumpulan laporan magang adalah Jumat pukul 15.00 WIB &nbsp; | &nbsp; 🟢 Pastikan atribut seragam lengkap saat apel pagi.";
 
-
         // ==========================================
-        // LOGIKA SISTEM
+        // LOGIKA SISTEM & WAKTU
         // ==========================================
         const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
         
@@ -189,7 +187,7 @@
         }
 
         // ==========================================
-        // LOGIKA FILTER HARI OTOMATIS
+        // LOGIKA FILTER HARI ATAU TANGGAL
         // ==========================================
         async function fetchJadwalDariSheets() {
             try {
@@ -203,44 +201,54 @@
                 const data = await response.text();
 
                 const barisData = data.split(/\r?\n/);
-                barisData.shift(); // Buang baris header (Hari, Waktu, Kegiatan, Lokasi)
+                barisData.shift(); // Buang baris header
 
                 const container = document.getElementById('agenda-list');
                 container.innerHTML = '';
 
-                // Dapatkan nama hari ini (Misal: "Senin")
-                const hariIni = days[new Date().getDay()].toLowerCase();
+                // (A) Dapatkan tulisan hari ini (contoh: "rabu")
+                const now = new Date();
+                const hariIni = days[now.getDay()].toLowerCase();
+                
+                // (B) Dapatkan Format Tanggal Hari ini (DD/MM/YYYY) dan (DD-MM-YYYY)
+                const tgl = String(now.getDate()).padStart(2, '0');
+                const bln = String(now.getMonth() + 1).padStart(2, '0');
+                const thn = now.getFullYear();
+                
+                const tanggalFormat1 = `${tgl}/${bln}/${thn}`; // contoh: 14/10/2026
+                const tanggalFormat2 = `${tgl}-${bln}-${thn}`; // contoh: 14-10-2026
+
                 let agendaDitemukan = false;
-                let indeks = 1;
 
                 barisData.forEach((baris) => {
                     const kolom = baris.split('\t');
                     
-                    // Pastikan baris memiliki 4 kolom (0:Hari, 1:Waktu, 2:Kegiatan, 3:Lokasi)
                     if (kolom.length >= 4 && kolom[0].trim() !== '') {
                         
-                        const hariJadwal = kolom[0].trim().toLowerCase();
+                        const waktuJadwal = kolom[0].trim().toLowerCase();
                         
-                        // FILTER: Hanya render kegiatan yang kolom harinya SAMA dengan hari ini
-                        if (hariJadwal === hariIni) {
+                        // FILTER GANDA: Cek apakah sel berisi "Hari ini" ATAU "Tanggal hari ini"
+                        if (waktuJadwal === hariIni || waktuJadwal === tanggalFormat1 || waktuJadwal === tanggalFormat2) {
                             agendaDitemukan = true;
+                            
+                            // Ambil data kegiatan
+                            const labelTanda = kolom[0].trim().toUpperCase();
                             const waktu = kolom[1].trim();
                             const judul = kolom[2].trim();
                             const lokasi = kolom[3].trim();
 
                             container.innerHTML += `
                                 <div class="agenda-item">
-                                    <span class="agenda-time">${kolom[0].trim()} • ${waktu}</span>
+                                    <span class="agenda-time">${labelTanda} • ${waktu}</span>
                                     <p class="agenda-title">${judul}</p>
                                     <p class="agenda-loc">${lokasi}</p>
                                 </div>
                             `;
-                            indeks++;
                         }
                     }
                 });
 
-                // Jika di Excel tidak ada tulisan hari ini (kosong/libur)
+                // Jika tidak ada data yang cocok dengan hari atau tanggal saat ini
                 if (!agendaDitemukan) {
                     container.innerHTML = `
                         <div style="text-align: center; color: #ccc; margin-top: 30px;">
